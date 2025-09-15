@@ -1,9 +1,7 @@
 // client/src/pages/CampaignHistoryPage.jsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./CampaignHistoryPage.css";
-
-// Force backend URL
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { api } from "../services/api";
 
 export default function CampaignHistoryPage() {
   const [campaigns, setCampaigns] = useState([]);
@@ -12,7 +10,7 @@ export default function CampaignHistoryPage() {
   const ctrlRef = useRef(null);
 
   const load = useCallback(async () => {
-    // Cancel any in-flight request
+    // cancel any in-flight request
     ctrlRef.current?.abort();
     const ctrl = new AbortController();
     ctrlRef.current = ctrl;
@@ -20,21 +18,10 @@ export default function CampaignHistoryPage() {
     try {
       setError("");
       setLoading(true);
-
-      const res = await fetch(`${API_BASE}/api/campaigns`, {
-        signal: ctrl.signal,
-        credentials: "include",
-        headers: { Accept: "application/json" },
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-
-      const data = await res.json();
+      const data = await api("/api/campaigns/history", { signal: ctrl.signal });
       setCampaigns(Array.isArray(data) ? data : []);
     } catch (err) {
-      if (err.name !== "AbortError") {
-        setError(err.message || "Failed to load campaign history");
-      }
+      if (err.name !== "AbortError") setError(err.message || "Failed to load campaign history");
     } finally {
       if (ctrlRef.current === ctrl) ctrlRef.current = null;
       setLoading(false);
@@ -58,9 +45,7 @@ export default function CampaignHistoryPage() {
             <span className="hist__meta">campaigns</span>
           </div>
           <div className="ccp__actions">
-            <button className="btn btn--ghost" onClick={load}>
-              Refresh
-            </button>
+            <button className="btn btn--ghost" onClick={load}>Refresh</button>
           </div>
         </div>
 
@@ -69,9 +54,7 @@ export default function CampaignHistoryPage() {
         ) : error ? (
           <p className="ccp__error">{error}</p>
         ) : campaigns.length === 0 ? (
-          <div className="hist__empty">
-            <p>No campaigns found.</p>
-          </div>
+          <div className="hist__empty"><p>No campaigns found.</p></div>
         ) : (
           <div className="hist__tableWrap">
             <table className="hist__table">
@@ -97,7 +80,6 @@ export default function CampaignHistoryPage() {
                         minute: "2-digit",
                       })
                     : "-";
-
                   const rulesSummary = Array.isArray(c.rules)
                     ? c.rules.map((r) => `${r.field} ${r.operator} ${r.value}`).join(" | ")
                     : "";
@@ -110,9 +92,7 @@ export default function CampaignHistoryPage() {
                       <td><span className="pill pill--bad">{c?.stats?.failed ?? 0}</span></td>
                       <td>{(c.conjunction || "AND").toUpperCase()}</td>
                       <td>
-                        <span title={rulesSummary}>
-                          {rulesSummary || "—"}
-                        </span>
+                        <span title={rulesSummary}>{rulesSummary || "—"}</span>
                         {Array.isArray(c.rules) && c.rules.length > 0 && (
                           <details>
                             <summary>view</summary>

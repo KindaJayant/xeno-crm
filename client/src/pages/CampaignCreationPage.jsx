@@ -1,6 +1,7 @@
-import { useState } from "react";
-import React from "react"; 
+// client/src/pages/CampaignCreationPage.jsx
+import React, { useState } from "react";
 import "./CampaignCreationPage.css";
+import { api } from "../services/api";
 
 export default function CampaignCreationPage() {
   const [prompt, setPrompt] = useState("");
@@ -17,20 +18,16 @@ export default function CampaignCreationPage() {
     next[idx] = { ...next[idx], [key]: val };
     setRules(next);
   };
-
   const addRule = () => setRules([...rules, { field: "spend", operator: ">", value: "0" }]);
 
   const handlePreview = async () => {
     setError("");
     setLoadingPreview(true);
     try {
-      const res = await fetch("/api/campaigns/preview", {
+      const data = await api("/api/campaigns/preview", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conjunction, rules }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Preview failed");
       setAudienceSize(typeof data?.audienceSize === "number" ? data.audienceSize : 0);
     } catch (e) {
       setError(e.message || "Preview failed");
@@ -43,14 +40,11 @@ export default function CampaignCreationPage() {
     setError("");
     setLoadingCreate(true);
     try {
-      const res = await fetch("/api/campaigns", {
+      await api("/api/campaigns", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conjunction, rules }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Create failed");
-      // success UX is your call; we keep the form here
+      // success UX is your call (toast/reset/navigate)
     } catch (e) {
       setError(e.message || "Create failed");
     } finally {
@@ -58,51 +52,37 @@ export default function CampaignCreationPage() {
     }
   };
 
-  // AI integration: tries a backend endpoint if you wire one up.
-  // If /api/rules/generate doesn't exist yet, we gracefully fall back.
-const handleGenerateRules = async () => {
-  setError("");
-  setLoadingAI(true);
-  try {
-    // ✅ match your server route
-    const res = await fetch("/api/ai/generate-rules", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
+  const handleGenerateRules = async () => {
+    setError("");
+    setLoadingAI(true);
+    try {
+      const data = await api("/api/ai/generate-rules", {
+        method: "POST",
+        body: JSON.stringify({ prompt }),
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.message || "AI generation failed");
-    }
-
-    // Your aiRoutes returns: { rules: [...] }
-    const data = await res.json();
-
-    if (Array.isArray(data?.rules) && data.rules.length) {
-      // default to AND when multiple rules come back
+      if (Array.isArray(data?.rules) && data.rules.length) {
+        setConjunction("AND");
+        setRules(
+          data.rules.map((r) => ({
+            field: String(r.field).toLowerCase() === "total spend" ? "spend" : String(r.field),
+            operator: String(r.operator),
+            value: String(r.value),
+          }))
+        );
+      } else {
+        throw new Error("AI returned no rules");
+      }
+    } catch (e) {
+      // graceful fallback
+      const n = (prompt.match(/\d+/g) || [])[0] ?? "10000";
       setConjunction("AND");
-      setRules(
-        data.rules.map(r => ({
-          field: String(r.field).toLowerCase() === "total spend" ? "spend" : String(r.field),
-          operator: String(r.operator),
-          value: String(r.value),
-        }))
-      );
-    } else {
-      throw new Error("AI returned no rules");
+      setRules([{ field: "spend", operator: ">", value: String(n) }]);
+      setError(e.message || "AI failed; used fallback.");
+    } finally {
+      setLoadingAI(false);
     }
-  } catch (e) {
-    // graceful fallback so UX still works
-    const n = (prompt.match(/\d+/g) || [])[0] ?? "10000";
-    setConjunction("AND");
-    setRules([{ field: "spend", operator: ">", value: String(n) }]);
-    setError(e.message || "AI failed; used fallback.");
-  } finally {
-    setLoadingAI(false);
-  }
-};
-
+  };
 
   return (
     <div className="ccp">
@@ -143,9 +123,7 @@ const handleGenerateRules = async () => {
             <option value="AND">AND</option>
             <option value="OR">OR</option>
           </select>
-          <span className="ccp__helper">
-            Match all (AND) or any (OR) of the following rules.
-          </span>
+          <span className="ccp__helper">Match all (AND) or any (OR) of the following rules.</span>
         </div>
 
         {/* Rules */}
@@ -193,29 +171,17 @@ const handleGenerateRules = async () => {
           </button>
 
           <div className="ccp__actions">
-            <button
-              className="btn btn--muted"
-              type="button"
-              onClick={handlePreview}
-              disabled={loadingPreview}
-            >
+            <button className="btn btn--muted" type="button" onClick={handlePreview} disabled={loadingPreview}>
               {loadingPreview ? "Previewing..." : "Preview Audience"}
             </button>
 
-            <button
-              className="btn btn--primary"
-              type="button"
-              onClick={handleCreate}
-              disabled={loadingCreate}
-            >
+            <button className="btn btn--primary" type="button" onClick={handleCreate} disabled={loadingCreate}>
               {loadingCreate ? "Saving..." : "Save & Launch Campaign"}
             </button>
           </div>
         </div>
 
-        {typeof audienceSize === "number" && (
-          <p className="ccp__preview">Audience Size: {audienceSize}</p>
-        )}
+        {typeof audienceSize === "number" && <p className="ccp__preview">Audience Size: {audienceSize}</p>}
         {error && <p className="ccp__error">{error}</p>}
       </div>
     </div>
