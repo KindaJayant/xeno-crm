@@ -1,46 +1,52 @@
 // client/src/pages/LoginPage.jsx
 import React from "react";
-import { API_BASE } from "../services/api";
+import { API_BASE, api } from "../services/api";
+import { AuthContext } from "../context/AuthContext";
+import { useContext } from "react";
 
-const btn = {
-  display: "inline-block",
+const button = {
   padding: "12px 24px",
   fontSize: "1rem",
   fontWeight: 600,
   color: "#fff",
-  backgroundColor: "#2e7d32",
+  background: "#2e7d32",
   border: "none",
-  borderRadius: 8,
-  textDecoration: "none",
+  borderRadius: "8px",
   cursor: "pointer",
-  boxShadow: "0 2px 4px rgba(0,0,0,0.25)",
-  transition: "background .2s",
 };
 
-const LoginPage = () => {
-  const [hover, setHover] = React.useState(false);
-  const handleLogin = () => {
-    // ✅ always go to deployed backend, not localhost
+export default function LoginPage() {
+  const { refreshAuth } = useContext(AuthContext) ?? {};
+
+  const login = () => {
+    // Redirect to cloud backend, NOT localhost
     window.location.href = `${API_BASE}/auth/google`;
   };
+
+  const check = async () => {
+    try {
+      const r = await api("/auth/status");
+      alert(JSON.stringify(r, null, 2));
+      refreshAuth?.();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   return (
     <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#eaeaea" }}>
-      <h1 style={{ fontSize: "2rem", fontWeight: 800, marginBottom: ".5rem" }}>
+      <h1 style={{ fontSize: "2rem", fontWeight: 800, marginBottom: 8 }}>
         Login to Your Account
       </h1>
-      <p style={{ color: "#a0a0a0", marginBottom: "1.5rem" }}>
+      <p style={{ color: "#a0a0a0", marginBottom: 24 }}>
         Please log in using your Google account to continue.
       </p>
-      <button
-        onClick={handleLogin}
-        style={{ ...btn, backgroundColor: hover ? "#2f8c35" : "#2e7d32" }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-      >
-        Login with Google
-      </button>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+        <button onClick={login} style={button}>Login with Google</button>
+        <button onClick={check} style={{ ...button, background: "#424242" }}>
+          Check status
+        </button>
+      </div>
     </div>
   );
-};
-
-export default LoginPage;
+}

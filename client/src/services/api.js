@@ -11,7 +11,7 @@ export async function api(path, options = {}) {
   };
 
   const res = await fetch(url, {
-    credentials: "include", // ✅ ensures session cookie goes across domains
+    credentials: "include",
     ...options,
     headers,
   });
