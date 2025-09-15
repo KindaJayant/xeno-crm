@@ -52,27 +52,23 @@ app.use(express.json());
   • Prod needs SameSite=None; Secure for cross-site requests.
   • Dev uses Lax/!Secure for local testing.
 */
+// /server/index.js session config
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "replace_me_in_env",
     resave: false,
     saveUninitialized: false,
     name: "connect.sid",
-    cookie: isProd
-      ? {
-          httpOnly: true,
-          sameSite: "none",
-          secure: true,               // required for SameSite=None in browsers
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        }
-      : {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: false,
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        },
+    cookie: {
+      httpOnly: true,
+      sameSite: "none", // ✅ cross-site cookie
+      secure: true,     // ✅ required in prod
+      // ❌ remove cookie.domain — let browser auto-scope
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
   })
 );
+
 
 /* ---------- passport ---------- */
 app.use(passport.initialize());
