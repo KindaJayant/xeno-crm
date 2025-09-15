@@ -8,30 +8,31 @@ const FRONTEND = process.env.FRONTEND_URL; // e.g. https://xeno-crm-sigma.vercel
 // Start Google OAuth
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// Google callback
+// Google callback: ensure session is saved before redirecting to frontend
 router.get(
   "/google/callback",
   passport.authenticate("google", {
     failureRedirect: `${FRONTEND}/login?error=1`,
     session: true,
   }),
-  (_req, res) => {
-    res.redirect(FRONTEND);
+  (req, res) => {
+    // Make sure the session (connect.sid) is persisted before redirect
+    req.session.save(() => res.redirect(FRONTEND));
   }
 );
 
-// Session status
+// Session status used by ProtectedRoute
 router.get("/status", (req, res) => {
   if (!req.user) return res.status(200).json({ isAuthenticated: false });
   res.status(200).json({ isAuthenticated: true, user: req.user });
 });
 
-// Logout
-router.post("/logout", (req, res, next) => {
+// Logout: accept both GET and POST to avoid client mismatch
+router.all("/logout", (req, res, next) => {
   req.logout?.((err) => {
     if (err) return next(err);
     req.session?.destroy?.(() => {});
-    res.clearCookie("connect.sid", { sameSite: "none", secure: true });
+    res.clearCookie("connect.sid", { sameSite: "none", secure: true, domain: ".onrender.com" });
     res.json({ ok: true });
   });
 });

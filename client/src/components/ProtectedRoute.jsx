@@ -13,23 +13,16 @@ export default function ProtectedRoute({ children }) {
     (async () => {
       try {
         const res = await api("/auth/status");
-        if (mounted) {
-          setIsAuthed(res.isAuthenticated);
-        }
+        if (mounted) setIsAuthed(!!res?.isAuthenticated);
       } catch {
         if (mounted) setIsAuthed(false);
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  if (loading) return null; // spinner could go here
-  if (!isAuthed) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-  return children;
+  if (loading) return <div style={{ padding: 24 }}>Checking session…</div>;
+  return isAuthed ? children : <Navigate to="/login" replace state={{ from: location }} />;
 }
