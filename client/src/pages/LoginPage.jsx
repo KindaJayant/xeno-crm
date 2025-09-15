@@ -1,36 +1,31 @@
+// client/src/pages/LoginPage.jsx
 import React from "react";
+import { API_BASE } from "../services/api";
 
-const buttonStyle = {
+const btn = {
   display: "inline-block",
   padding: "12px 24px",
   fontSize: "1rem",
-  fontWeight: "600",
+  fontWeight: 600,
   color: "#fff",
-  backgroundColor: "#2e7d32", // ✅ Green theme
+  backgroundColor: "#2e7d32",
   border: "none",
-  borderRadius: "8px",
+  borderRadius: 8,
   textDecoration: "none",
   cursor: "pointer",
-  boxShadow: "0 2px 4px 0 rgba(0,0,0,0.25)",
-  transition: "background 0.2s ease-in-out",
-};
-
-const buttonHoverStyle = {
-  ...buttonStyle,
-  backgroundColor: "#2f8c35", // ✅ Slightly lighter on hover
+  boxShadow: "0 2px 4px rgba(0,0,0,0.25)",
+  transition: "background .2s",
 };
 
 const LoginPage = () => {
   const [hover, setHover] = React.useState(false);
-
   const handleLogin = () => {
-    // Redirect the user to the backend's Google auth route
-    window.location.href = "http://localhost:5000/auth/google";
+    // ✅ always go to deployed backend, not localhost
+    window.location.href = `${API_BASE}/auth/google`;
   };
-
   return (
     <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#eaeaea" }}>
-      <h1 style={{ fontSize: "2rem", fontWeight: "800", marginBottom: "0.5rem" }}>
+      <h1 style={{ fontSize: "2rem", fontWeight: 800, marginBottom: ".5rem" }}>
         Login to Your Account
       </h1>
       <p style={{ color: "#a0a0a0", marginBottom: "1.5rem" }}>
@@ -38,7 +33,7 @@ const LoginPage = () => {
       </p>
       <button
         onClick={handleLogin}
-        style={hover ? buttonHoverStyle : buttonStyle}
+        style={{ ...btn, backgroundColor: hover ? "#2f8c35" : "#2e7d32" }}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
