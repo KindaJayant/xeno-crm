@@ -1,4 +1,5 @@
-const mongoose = require('mongoose');
+// /server/models/Campaign.js
+const mongoose = require("mongoose");
 
 const campaignSchema = new mongoose.Schema(
   {
@@ -9,7 +10,7 @@ const campaignSchema = new mongoose.Schema(
     channel: String,
     message: String,
   },
-  { timestamps: true } // ← adds createdAt/updatedAt
+  { timestamps: true } // adds createdAt/updatedAt
 );
 
-module.exports = mongoose.model('Campaign', campaignSchema);
+module.exports = mongoose.model("Campaign", campaignSchema);
