@@ -1,27 +1,31 @@
-import { useState, useEffect } from "react";
-import React from "react"; 
-import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+// client/src/App.jsx
+import React from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+
 import Navbar from "./components/Navbar.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
 import CampaignCreationPage from "./pages/CampaignCreationPage.jsx";
 import CampaignHistoryPage from "./pages/CampaignHistoryPage.jsx";
-import LoginPage from "./pages/LoginPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 export default function App() {
-  const location = useLocation();
-  const hideNavbar = location.pathname === "/login";
+  const { pathname } = useLocation();
+  const hideNavbar = pathname === "/login";
 
   return (
     <>
       {!hideNavbar && <Navbar />}
 
       <Routes>
+        {/* default → login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
         {/* public */}
         <Route path="/login" element={<LoginPage />} />
 
         {/* protected */}
         <Route
-          path="/"
+          path="/create"
           element={
             <ProtectedRoute>
               <CampaignCreationPage />
@@ -38,7 +42,7 @@ export default function App() {
         />
 
         {/* fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
   );
