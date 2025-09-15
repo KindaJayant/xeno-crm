@@ -1,8 +1,11 @@
-// server/index.js
+// /server/index.js
 const path = require("path");
+
+// Load .env only in non-production
 if (process.env.NODE_ENV !== "production") {
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+  require("dotenv").config({ path: path.join(__dirname, ".env") });
 }
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -13,42 +16,55 @@ const passport = require("passport");
 require("./config/passport-setup");
 
 const app = express();
+const isProd = process.env.NODE_ENV === "production";
 
-/* ---------- middleware (order matters) ---------- */
-// allow your Vite dev origins + optional prod FRONTEND_URL
+/* ---------- trust proxy (needed for secure cookies behind Render) ---------- */
+app.set("trust proxy", 1);
+
+/* ---------- CORS ---------- */
+// allow localhost (dev) + your deployed frontend
 const allowed = [
   "http://localhost:5173",
   "http://localhost:5174",
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL, // e.g. https://your-site.vercel.app
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // curl/postman
-      return allowed.includes(origin)
-        ? cb(null, true)
-        : cb(new Error("CORS blocked"));
+      if (allowed.includes(origin)) return cb(null, true);
+      return cb(new Error("CORS blocked: " + origin));
     },
     credentials: true,
   })
 );
 
+/* ---------- body parsing ---------- */
 app.use(express.json());
 
+/* ---------- session (cross-site friendly in prod) ---------- */
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your_secret_session_key",
+    secret: process.env.SESSION_SECRET || "replace_me_in_env",
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd, // required for SameSite=None
+      // maxAge: 7 * 24 * 60 * 60 * 1000, // optional
+    },
   })
 );
 
+/* ---------- passport ---------- */
 app.use(passport.initialize());
 app.use(passport.session());
 
-// quick test endpoints (behind CORS so the client can call them)
+/* ---------- tiny health + smoke routes (CORS-reachable) ---------- */
 app.get("/__up", (_req, res) => res.send("UP"));
+app.get("/healthz", (_req, res) => res.send("ok"));
 app.get("/api/ping", (_req, res) => res.json({ ok: true, time: Date.now() }));
 app.get("/api/campaigns/_test", (_req, res) =>
   res.json({ ok: true, note: "mounted OK" })
@@ -61,8 +77,8 @@ if (!uri) {
 } else {
   mongoose
     .connect(uri)
-    .then(() => console.log("Successfully connected to MongoDB"))
-    .catch((err) => console.error("Connection error:", err));
+    .then(() => console.log("✅ MongoDB connected"))
+    .catch((err) => console.error("❌ Mongo connection error:", err));
 }
 
 /* ---------- routes ---------- */
@@ -73,22 +89,19 @@ const deliveryReceiptRoutes = require("./routes/deliveryReceiptRoutes");
 const aiRoutes = require("./routes/aiRoutes"); // uses lazy Groq init
 
 app.use("/auth", authRoutes);
-app.use("/api/campaigns", campaignRoutes);        // inside file, use router.get('/')
+app.use("/api/campaigns", campaignRoutes);
 app.use("/api/ingest", ingestionRoutes);
 app.use("/api/delivery-receipt", deliveryReceiptRoutes);
-app.use("/api/ai", aiRoutes);                     // POST /generate-rules
+app.use("/api/ai", aiRoutes);
 
-// simple health check
-app.get("/healthz", (_req, res) => res.send("ok"));
-
-// 404 logger (keep last)
+/* ---------- 404 last ---------- */
 app.use((req, res) => {
   console.warn("404:", req.method, req.originalUrl);
   res.status(404).send("Not found");
 });
 
 /* ---------- start ---------- */
-const PORT = process.env.PORT || 5000; // <-- declared once
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`API listening at http://localhost:${PORT}`);
+  console.log(`API listening on :${PORT}`);
 });
