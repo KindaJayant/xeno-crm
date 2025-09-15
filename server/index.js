@@ -22,23 +22,32 @@ const isProd = process.env.NODE_ENV === "production";
 app.set("trust proxy", 1);
 
 /* ---------- CORS ---------- */
-// allow localhost (dev) + your deployed frontend
-const allowed = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  process.env.FRONTEND_URL, // e.g. https://your-site.vercel.app
-].filter(Boolean);
+const allowlist = new Set(
+  [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    process.env.FRONTEND_URL, // your canonical Vercel URL
+  ].filter(Boolean)
+);
 
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // curl/postman
-      if (allowed.includes(origin)) return cb(null, true);
-      return cb(new Error("CORS blocked: " + origin));
+      try {
+        const { hostname } = new URL(origin);
+        const ok =
+          allowlist.has(origin) ||
+          hostname.endsWith(".vercel.app"); // allow Vercel previews
+        return ok ? cb(null, true) : cb(new Error("CORS blocked: " + origin));
+      } catch {
+        return cb(new Error("CORS invalid origin"));
+      }
     },
     credentials: true,
   })
 );
+
 
 /* ---------- body parsing ---------- */
 app.use(express.json());
