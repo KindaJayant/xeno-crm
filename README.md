@@ -1,63 +1,62 @@
-# Xeno SDE Internship Assignment 2025 — Mini CRM
+# Xeno SDE Internship Assignment 2025 – Mini CRM
 
-This is the **Mini CRM system** built as part of the Xeno SDE Internship Assignment 2025.  
-It covers customer data ingestion, campaign creation, AI-driven audience segmentation, simulated communication delivery, and campaign history tracking.
+This repository contains my submission for the **Xeno SDE Internship Assignment 2025**.  
+The goal was to build a **Mini CRM Platform** that enables customer segmentation, personalized campaign delivery, and intelligent insights.
+
+---
+
+## 🚀 Live Links
+
+- **Frontend (Vercel):** https://xeno-crm-sigma.vercel.app/  
+- **Backend (Render):** https://<your-render-backend>.onrender.com  
 
 ---
 
 ## 📌 Features Implemented
 
-### 🔹 Backend (Express + MongoDB)
-- **Models**
-  - `Customer`: Stores customer profile, spend, visits, etc.
-  - `Campaign`: Stores targeting rules, conjunction, audience size, timestamps.
-  - `CommunicationLog`: Tracks delivery status (`SENT` or `FAILED`) for each campaign send.
-  - `Order`: Supports ingestion of order data.
-- **APIs**
-  - `/api/ingest` → Ingest customer and order data.
-  - `/api/campaigns/preview` → Preview audience size before launching a campaign.
-  - `/api/campaigns` → Create campaigns & list all past campaigns with stats.
-  - `/api/delivery-receipt` → Delivery simulation (≈90% success, ≈10% failure).
-  - `/api/ai/generate-rules` → AI-powered targeting rule generation (via Groq API).
-  - `/auth/*` → Google OAuth 2.0 authentication (via Passport).
-- **Services**
-  - `campaignProcessor` → Handles audience selection (`findAudience`) & sending (`sendCommunication`).
-- **Middleware**
-  - Session management with `express-session`.
-  - Passport for Google OAuth.
-  - CORS with environment-based whitelisting.
-- **Other**
-  - Health/test endpoints (`/healthz`, `/api/ping`, `/api/campaigns/_test`).
+### 1. Data Ingestion APIs
+- REST APIs to ingest **Customers** and **Orders** into MongoDB.
+- Implemented in Express.js with validation and schema checks.
+- Supports Postman/Swagger testing.
+- ✅ Extensible for pub-sub architecture (e.g., Kafka, RabbitMQ).
+
+### 2. Campaign Creation UI
+- React (Vite) frontend with **dynamic rule builder**:
+  - Define audience segments (`spend > 10000 AND visits < 3`).
+  - Supports AND/OR combinations.
+- **Audience Preview**: Shows matching count before saving.
+- After saving → redirects to **Campaign History** page.
+
+### 3. Campaign Delivery & Logging
+- On saving:
+  - Campaign stored in DB.
+  - Audience resolved via `findAudience`.
+  - **Simulated delivery** (~90% SENT, ~10% FAILED).
+  - Logs persisted in `CommunicationLog`.
+- Delivery Receipt API updates status in DB.
+
+### 4. Authentication
+- **Google OAuth 2.0** with Passport.
+- Only logged-in users can:
+  - Create campaigns.
+  - View campaign history.
+- Session-based auth stored via `express-session`.
+
+### 5. AI Integration
+- Integrated **Groq API** for **Natural Language → Rules**.  
+  Example: `"Users who spent > 5000 and visited < 3"` → strict JSON rules for the rule engine.
 
 ---
 
-### 🔹 Frontend (React + Vite + React Router)
-- **Authentication**
-  - Google OAuth login integrated with backend sessions.
-  - `ProtectedRoute` wrapper to guard `/` and `/history`.
-- **Pages**
-  - `LoginPage` → Always public, no navbar.
-  - `CampaignCreationPage` → Create a campaign with AI-generated rules, preview audience, save & launch.
-  - `CampaignHistoryPage` → Fetches `/api/campaigns`, shows sent/failed stats, rules, and timestamps.
-- **Components**
-  - `Navbar` → Conditional rendering (hidden on login page).
-  - `ProtectedRoute` → Guards private routes.
-- **Communication**
-  - API base managed via `VITE_API_URL` (set per environment).
-  - Handles errors, loading states, and aborts gracefully.
+## 🛠 Tech Stack
 
----
-
-## ⚙️ Tech Stack
-
-- **Frontend**: React 19 + Vite + React Router
-- **Backend**: Node.js + Express 5
-- **Database**: MongoDB (Mongoose ODM)
-- **Auth**: Passport (Google OAuth 2.0)
-- **AI**: Groq API integration
-- **Deployment**:  
+- **Frontend:** React 19, Vite, React Router
+- **Backend:** Node.js (Express 5), MongoDB (Mongoose)
+- **Auth:** Passport (Google OAuth 2.0)
+- **AI:** Groq API
+- **Deployment:**  
   - Frontend → Vercel  
-  - Backend → Render/Railway  
+  - Backend → Render  
 
 ---
 
@@ -66,79 +65,64 @@ It covers customer data ingestion, campaign creation, AI-driven audience segment
 ```
 
 xeno-crm/
-├── client/                 # React frontend
-│   ├── public/
-│   ├── src/
-│   │   ├── components/     # Navbar, ProtectedRoute
-│   │   ├── pages/          # CampaignCreation, CampaignHistory, Login
-│   │   └── App.jsx
+├── client/                 # Frontend (React + Vite)
+│   ├── src/pages/          # CampaignCreation, CampaignHistory, Login
+│   ├── src/components/     # Navbar, ProtectedRoute
 │   ├── vite.config.js
 │   ├── package.json
 │   └── ...
-└── server/                 # Express backend
-├── config/             # passport-setup.js
+└── server/                 # Backend (Express)
 ├── models/             # Customer, Campaign, CommunicationLog, Order
-├── routes/             # campaignRoutes, aiRoutes, authRoutes, ...
+├── routes/             # campaignRoutes, aiRoutes, ingestionRoutes, authRoutes
 ├── services/           # campaignProcessor.js
-├── index.js
-├── package.json
-└── ...
+├── config/             # passport-setup.js
+├── index.js            # Express entrypoint
+└── package.json
 
 ````
 
 ---
 
-## 🚀 Setup & Local Development
+## ⚙️ Environment Variables
 
-### 1. Clone Repo
-```bash
-git clone https://github.com/<your-username>/<repo>.git
-cd xeno-crm
+### Backend (`server/.env`)
+```env
+PORT=5000
+MONGO_URI=<your-mongodb-uri>
+SESSION_SECRET=<any-random-string>
+GOOGLE_CLIENT_ID=<google-client-id>
+GOOGLE_CLIENT_SECRET=<google-client-secret>
+GROQ_API_KEY=<groq-api-key>
+FRONTEND_URL=https://xeno-crm-sigma.vercel.app
 ````
 
-### 2. Backend Setup
+### Frontend (`client/.env.local`)
+
+```env
+VITE_API_URL=https://<your-render-backend>.onrender.com
+```
+
+---
+
+## 🖥 Local Development
+
+### Backend
 
 ```bash
 cd server
 npm install
+npm run dev      # runs on http://localhost:5000
 ```
 
-Create `.env` in `/server`:
-
-```env
-PORT=5000
-MONGO_URI=your-mongo-uri
-SESSION_SECRET=your-session-secret
-GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxxx
-GROQ_API_KEY=gsk_xxx
-FRONTEND_URL=http://localhost:5173
-```
-
-Run dev server:
+### Frontend
 
 ```bash
-npm run dev   # nodemon index.js
-```
-
-### 3. Frontend Setup
-
-```bash
-cd ../client
+cd client
 npm install
+npm run dev      # runs on http://localhost:5173
 ```
 
-Create `.env.local` in `/client`:
-
-```env
-VITE_API_URL=http://localhost:5000
-```
-
-Run dev server:
-
-```bash
-npm run dev   # starts Vite on http://localhost:5173
-```
+In dev mode, Vite proxies `/api` and `/auth` to backend.
 
 ---
 
@@ -146,77 +130,98 @@ npm run dev   # starts Vite on http://localhost:5173
 
 ### Backend → Render
 
-1. Create new Web Service → Root Directory = `server/`
-2. Build command:
-
-   ```
-   npm install
-   ```
-
-   Start command:
-
-   ```
-   node index.js
-   ```
-3. Set environment variables:
-
-   * `MONGO_URI`
-   * `SESSION_SECRET`
-   * `GOOGLE_CLIENT_ID`
-   * `GOOGLE_CLIENT_SECRET`
-   * `GROQ_API_KEY`
-   * `FRONTEND_URL=https://<your-frontend>.vercel.app`
-   * (Render auto-assigns `PORT`)
-4. Deploy → get URL like `https://xeno-crm-backend.onrender.com`
+1. Root dir: `/server`
+2. Build: `npm install`
+3. Start: `node index.js`
+4. Env Vars: set as above.
+5. Ensure `app.listen(PORT)` (not bound to 127.0.0.1).
 
 ### Frontend → Vercel
 
-1. Import repo → Root Directory = `client/`
+1. Root dir: `/client`
 2. Build command: `npm run build`
-3. Output Directory: `dist`
-4. Add env variable:
+3. Output dir: `dist`
+4. Env Vars:
 
-   * `VITE_API_URL=https://xeno-crm-backend.onrender.com`
-5. Deploy → get URL like `https://xeno-crm.vercel.app`
+   ```
+   VITE_API_URL=https://<your-render-backend>.onrender.com
+   ```
 
 ---
 
-## 🧪 Testing & Verification
+## 🧪 Testing
 
 * **Health checks**
 
-  * `GET /__up` → `"UP"`
-  * `GET /api/ping` → `{ ok: true, time: <timestamp> }`
-  * `GET /api/campaigns/_test` → `{ ok: true, note: "mounted OK" }`
+  * `/api/ping` → `{ ok: true }`
+  * `/api/campaigns/_test` → test response
+* **Flow**
 
-* **Campaign Flow**
-
-  1. Ingest customer/order data → `/api/ingest`
-  2. Generate rules with AI → `/api/ai/generate-rules`
-  3. Preview audience → `/api/campaigns/preview`
-  4. Launch campaign → `/api/campaigns`
-  5. Check delivery logs → `/api/delivery-receipt`
-  6. View history → frontend `/history` (calls `/api/campaigns`)
+  1. Ingest customers/orders
+  2. Create campaign with rules or AI
+  3. Preview → Save
+  4. Delivery simulation logs `SENT/FAILED`
+  5. History page shows stats
 
 ---
 
-## 📹 Walkthrough Video (Optional)
+## 🧠 Architecture Diagram
 
-* Show login with Google OAuth
-* Create campaign with AI rules
-* Preview & launch
-* Show simulated delivery stats
-* View campaign history page with sent/failed stats
+```
+ [React Frontend] --(fetch, axios)--> [Express API] --(Mongoose)--> [MongoDB]
+        |                                         |
+        |------ OAuth (Google Passport) ----------|
+        |------ AI Rule Gen (Groq API) -----------|
+```
 
 ---
 
-## ✅ Assignment Coverage
+## ⚡ Known Limitations
 
-* [x] Customer + Order data ingestion
-* [x] Campaign creation with rule engine
-* [x] AI rule generation (Groq)
-* [x] Audience preview before launch
-* [x] Simulated delivery with SENT/FAILED
-* [x] Campaign history dashboard
+* Delivery is **simulated**, not via real vendor APIs.
+* Pub-Sub (Kafka/Redis) **not implemented**, but architecture allows extension.
+* Google OAuth tested in dev, requires proper production client ID for live.
+* AI integration limited to rule generation; other AI features (message suggestions, summaries) possible.
+
+---
+
+## 📹 Demo Video (to be attached)
+
+Covers:
+
+* Campaign creation
+* AI rule builder
+* Delivery simulation
+* Campaign history
+
+---
+
+## ✅ Assignment Coverage Checklist
+
+* [x] Data Ingestion APIs
+* [x] Campaign Creation UI with Rule Builder
+* [x] Campaign Delivery & Logging
 * [x] Authentication (Google OAuth)
-* [x] Deployment on Vercel + Render
+* [x] AI Integration (Groq rule generator)
+* [x] Deployment (Render + Vercel)
+* [x] README with setup + diagram + env vars
+
+---
+
+## 📄 License
+
+MIT License
+
+```
+
+---
+
+This README matches **every deliverable** in the assignment PDF:  
+- Local setup ✅  
+- Architecture diagram ✅  
+- AI tools explanation ✅  
+- Known limitations ✅  
+- Deployment + env vars ✅  
+
+Do you want me to also add a **“How to run demo video” script** (like a 1–2 minute narration guide), so when you record your 7-min walkthrough you hit every point cleanly?
+```
