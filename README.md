@@ -8,7 +8,7 @@ The goal was to build a **Mini CRM Platform** that enables customer segmentation
 ## 🚀 Live Links
 
 - **Frontend (Vercel):** https://xeno-crm-sigma.vercel.app/  
-- **Backend (Render):** https://<your-render-backend>.onrender.com  
+- **Backend (Render):** https://xeno-crm-4166.onrender.com
 
 ---
 
@@ -99,7 +99,7 @@ FRONTEND_URL=https://xeno-crm-sigma.vercel.app
 ### Frontend (`client/.env.local`)
 
 ```env
-VITE_API_URL=https://<your-render-backend>.onrender.com
+VITE_API_URL=h[ttps://<your-render-backend>.onrender.com](https://xeno-crm-4166.onrender.com)
 ```
 
 ---
@@ -111,7 +111,7 @@ VITE_API_URL=https://<your-render-backend>.onrender.com
 ```bash
 cd server
 npm install
-npm run dev      # runs on http://localhost:5000
+npm run dev     
 ```
 
 ### Frontend
@@ -119,7 +119,7 @@ npm run dev      # runs on http://localhost:5000
 ```bash
 cd client
 npm install
-npm run dev      # runs on http://localhost:5173
+npm run dev      
 ```
 
 In dev mode, Vite proxies `/api` and `/auth` to backend.
@@ -144,7 +144,7 @@ In dev mode, Vite proxies `/api` and `/auth` to backend.
 4. Env Vars:
 
    ```
-   VITE_API_URL=https://<your-render-backend>.onrender.com
+   VITE_API_URL=[https://xeno-crm-4166.onrender.com]
    ```
 
 ---
@@ -185,7 +185,9 @@ In dev mode, Vite proxies `/api` and `/auth` to backend.
 
 ---
 
-## 📹 Demo Video (to be attached)
+## 📹 Demo Video 
+
+https://www.loom.com/share/743375af60ac4e869edb0cc323ac7209?sid=342adfd1-2d4b-4b50-a813-8672ad214e6c
 
 Covers:
 
@@ -207,21 +209,3 @@ Covers:
 * [x] README with setup + diagram + env vars
 
 ---
-
-## 📄 License
-
-MIT License
-
-```
-
----
-
-This README matches **every deliverable** in the assignment PDF:  
-- Local setup ✅  
-- Architecture diagram ✅  
-- AI tools explanation ✅  
-- Known limitations ✅  
-- Deployment + env vars ✅  
-
-Do you want me to also add a **“How to run demo video” script** (like a 1–2 minute narration guide), so when you record your 7-min walkthrough you hit every point cleanly?
-```
