@@ -1,41 +1,42 @@
-const express = require('express');
-const passport = require('passport');
+// /server/routes/authRoutes.js
+const express = require("express");
+const passport = require("passport");
 const router = express.Router();
 
-// GET /auth/google
-// Auth with Google
-router.get('/google',
-  passport.authenticate('google', {
-    scope: ['profile', 'email']
-  })
+const FRONTEND = process.env.FRONTEND_URL; // e.g. https://xeno-crm-sigma.vercel.app
+
+// Start OAuth
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-// GET /auth/google/callback
-// Callback route for Google to redirect to
-router.get('/google/callback',
-  passport.authenticate('google'),
-  (req, res) => {
-    // Successful authentication, redirect home.
-    res.redirect('http://localhost:5173');
+// Callback from Google
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: `${FRONTEND}/login?error=1`,
+    session: true,
+  }),
+  (_req, res) => {
+    // success: go back to app
+    res.redirect(FRONTEND);
   }
 );
 
-// GET /auth/status
-// Checks if a user is currently logged in
-router.get('/status', (req, res) => {
-  if (req.user) {
-    res.status(200).json({ isAuthenticated: true, user: req.user });
-  } else {
-    res.status(200).json({ isAuthenticated: false });
-  }
+// Session status (simple)
+router.get("/status", (req, res) => {
+  if (!req.user) return res.status(200).json({ isAuthenticated: false });
+  res.status(200).json({ isAuthenticated: true, user: req.user });
 });
 
-// GET /auth/logout
-// Logs the user out
-router.get('/logout', (req, res, next) => {
-  req.logout(function(err) {
-    if (err) { return next(err); }
-    res.redirect('http://localhost:5173/login');
+// Logout
+router.get("/logout", (req, res, next) => {
+  req.logout?.((err) => {
+    if (err) return next(err);
+    req.session?.destroy?.(() => {});
+    res.clearCookie("connect.sid", { sameSite: "none", secure: true });
+    res.redirect(`${FRONTEND}/login`);
   });
 });
 

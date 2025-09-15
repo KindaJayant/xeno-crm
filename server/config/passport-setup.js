@@ -1,29 +1,26 @@
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-require('dotenv').config();
+// /server/config/passport-setup.js
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
-// In-memory "database" to store users
+// Tiny in-memory store (good enough for the assignment demo)
 const users = {};
 
-// Saves user information into the session
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser((id, done) => done(null, users[id]));
 
-// Retrieves user information from the session
-passport.deserializeUser((id, done) => {
-  done(null, users[id]);
-});
+// IMPORTANT: use your deployed SERVER_URL for the callback
+const SERVER_URL = process.env.SERVER_URL; // e.g. https://xeno-crm-4166.onrender.com
 
 passport.use(
-  new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback'
-  }, (accessToken, refreshToken, profile, done) => {
-    // When a user logs in, save their profile to our in-memory store
-    users[profile.id] = profile;
-    console.log('User authenticated:', profile.displayName);
-    done(null, profile);
-  })
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: `${SERVER_URL}/auth/google/callback`,
+    },
+    (accessToken, refreshToken, profile, done) => {
+      users[profile.id] = profile; // upsert
+      return done(null, profile);
+    }
+  )
 );
