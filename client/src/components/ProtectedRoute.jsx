@@ -1,21 +1,34 @@
-// src/components/ProtectedRoute.jsx
-import React from "react"; 
-import { useContext } from "react";
+// client/src/components/ProtectedRoute.jsx
+import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext"; // <-- confirm this path
+import { api } from "../services/api";
 
 export default function ProtectedRoute({ children }) {
-  // If the provider isn't mounted (ctx === undefined), don't crash.
-  const ctx = useContext(AuthContext);
-
-  // No provider found: just render children (non-blocking)
-  if (!ctx) return children;
-
-  const { user, loading } = ctx;
+  const [loading, setLoading] = useState(true);
+  const [isAuthed, setIsAuthed] = useState(false);
   const location = useLocation();
 
-  if (loading) return null; // or a spinner
-  if (!user) {
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api("/auth/status");
+        if (mounted) {
+          setIsAuthed(res.isAuthenticated);
+        }
+      } catch {
+        if (mounted) setIsAuthed(false);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) return null; // spinner could go here
+  if (!isAuthed) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
   return children;

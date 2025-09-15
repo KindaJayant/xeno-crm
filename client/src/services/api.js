@@ -4,7 +4,6 @@ const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:5000").repla
 export async function api(path, options = {}) {
   const url = `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
 
-  // Build headers: only add JSON content-type when there is a body (POST/PUT/PATCH)
   const hasBody = options.body != null;
   const headers = {
     ...(hasBody ? { "Content-Type": "application/json" } : {}),
@@ -12,7 +11,7 @@ export async function api(path, options = {}) {
   };
 
   const res = await fetch(url, {
-    credentials: "include",
+    credentials: "include", // ✅ ensures session cookie goes across domains
     ...options,
     headers,
   });
