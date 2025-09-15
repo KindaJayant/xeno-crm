@@ -15,86 +15,98 @@ require("./config/passport-setup");
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
 
-/* Trust Render’s proxy so secure cookies work */
+/* ---------- trust proxy (Render) ---------- */
 app.set("trust proxy", 1);
 
-/* -------- CORS -------- */
+/* ---------- CORS ---------- */
+const FRONTEND = (process.env.FRONTEND_URL || "").replace(/\/$/, "");
 const allowlist = new Set(
-  [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    process.env.FRONTEND_URL, // e.g. https://xeno-crm-sigma.vercel.app
-  ].filter(Boolean)
+  ["http://localhost:5173", "http://localhost:5174", FRONTEND].filter(Boolean)
 );
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
+      if (!origin) return cb(null, true); // curl/postman
       try {
         const { hostname } = new URL(origin);
         const ok =
           allowlist.has(origin) ||
-          hostname.endsWith(".vercel.app");
+          hostname.endsWith(".vercel.app"); // allow preview deployments
         return ok ? cb(null, true) : cb(new Error("CORS blocked: " + origin));
       } catch {
         return cb(new Error("CORS invalid origin"));
       }
     },
-    credentials: true, // <-- allow cookies
+    credentials: true,
   })
 );
 
 app.use(express.json());
 
-/* -------- Session (cross-site) -------- */
+/* ---------- session (cookies) ---------- */
+/*
+  Notes:
+  • We intentionally DO NOT set `cookie.domain`. Host-only cookies are more reliable
+    and will be scoped to xeno-crm-4166.onrender.com.
+  • Prod needs SameSite=None; Secure for cross-site requests.
+  • Dev uses Lax/!Secure for local testing.
+*/
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "replace_me_in_env",
     resave: false,
     saveUninitialized: false,
     name: "connect.sid",
-    cookie: {
-      httpOnly: true,
-      sameSite: "none",        // allow cross-site cookie
-      secure: isProd,          // required for SameSite=None
-      domain: ".onrender.com", // scope cookie to your backend domain
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    },
+    cookie: isProd
+      ? {
+          httpOnly: true,
+          sameSite: "none",
+          secure: true,               // required for SameSite=None in browsers
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        }
+      : {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: false,
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        },
   })
 );
 
-/* Passport */
+/* ---------- passport ---------- */
 app.use(passport.initialize());
 app.use(passport.session());
 
-/* Health */
+/* ---------- health ---------- */
 app.get("/__up", (_req, res) => res.send("UP"));
 app.get("/healthz", (_req, res) => res.send("ok"));
+app.get("/api/ping", (_req, res) => res.json({ ok: true, time: Date.now() }));
 
-/* DB */
+/* ---------- DB ---------- */
 const uri = process.env.MONGO_URI;
-if (!uri) console.warn("[env] MONGO_URI missing");
-else {
+if (!uri) {
+  console.warn("[env] MONGO_URI missing");
+} else {
   mongoose
     .connect(uri)
     .then(() => console.log("✅ MongoDB connected"))
     .catch((err) => console.error("❌ Mongo connection error:", err));
 }
 
-/* Routes */
+/* ---------- routes ---------- */
 app.use("/auth", require("./routes/authRoutes"));
 app.use("/api/campaigns", require("./routes/campaignRoutes"));
 app.use("/api/ingest", require("./routes/ingestionRoutes"));
 app.use("/api/delivery-receipt", require("./routes/deliveryReceiptRoutes"));
 app.use("/api/ai", require("./routes/aiRoutes"));
 
-/* 404 */
+/* ---------- 404 ---------- */
 app.use((req, res) => {
   console.warn("404:", req.method, req.originalUrl);
   res.status(404).send("Not found");
 });
 
-/* Start */
+/* ---------- start ---------- */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`API listening on :${PORT}`));
